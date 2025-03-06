@@ -12,29 +12,41 @@ export function App() {
   const { data: employees, ...employeeUtils } = useEmployees()
   const { data: paginatedTransactions, ...paginatedTransactionsUtils } = usePaginatedTransactions()
   const { data: transactionsByEmployee, ...transactionsByEmployeeUtils } = useTransactionsByEmployee()
-  const [isLoading, setIsLoading] = useState(false)
 
   const transactions = useMemo(
     () => paginatedTransactions?.data ?? transactionsByEmployee ?? null,
     [paginatedTransactions, transactionsByEmployee]
   )
 
+  const [isEmployeesLoading, setIsEmployeesLoading] = useState(false)
+
   const loadAllTransactions = useCallback(async () => {
-    setIsLoading(true)
+    if (employees === null) {                     // Only set employee loading if employees aren't loaded yet
+      setIsEmployeesLoading(true)
+    }
+    
     transactionsByEmployeeUtils.invalidateData()
 
-    await employeeUtils.fetchAll()
-    await paginatedTransactionsUtils.fetchAll()
+    if (employees === null) {                    // If employees need to be loaded, do that first
+      await employeeUtils.fetchAll()
+      setIsEmployeesLoading(false)
+    }
 
-    setIsLoading(false)
-  }, [employeeUtils, paginatedTransactionsUtils, transactionsByEmployeeUtils])
+    await paginatedTransactionsUtils.fetchAll() // Loading transactions doesn't affect employee dropdown
+    
+}, [employees, employeeUtils, paginatedTransactionsUtils, transactionsByEmployeeUtils])
 
   const loadTransactionsByEmployee = useCallback(
     async (employeeId: string) => {
       paginatedTransactionsUtils.invalidateData()
-      await transactionsByEmployeeUtils.fetchById(employeeId)
-    },
-    [paginatedTransactionsUtils, transactionsByEmployeeUtils]
+      if (employeeId === EMPTY_EMPLOYEE.id) {
+        await loadAllTransactions();    
+      } else {                           
+        await transactionsByEmployeeUtils.fetchById(employeeId);
+      }
+  
+      },
+      [paginatedTransactionsUtils, transactionsByEmployeeUtils, loadAllTransactions]
   )
 
   useEffect(() => {
@@ -51,7 +63,7 @@ export function App() {
         <hr className="RampBreak--l" />
 
         <InputSelect<Employee>
-          isLoading={isLoading}
+          isLoading={isEmployeesLoading}
           defaultValue={EMPTY_EMPLOYEE}
           items={employees === null ? [] : [EMPTY_EMPLOYEE, ...employees]}
           label="Filter by employee"
@@ -74,16 +86,18 @@ export function App() {
         <div className="RampGrid">
           <Transactions transactions={transactions} />
 
-          {transactions !== null && (
+          {transactions !== null && 
+            paginatedTransactions !== null && 
+            paginatedTransactions.nextPage !== null &&(
             <button
               className="RampButton"
               disabled={paginatedTransactionsUtils.loading}
               onClick={async () => {
-                await loadAllTransactions()
+                await paginatedTransactionsUtils.fetchAll()
               }}
             >
               View More
-            </button>
+            </button> 
           )}
         </div>
       </main>
