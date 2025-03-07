@@ -201,6 +201,7 @@ _You need to fix some of the previous bugs in order to reproduce_
 You will submit a link to a CodeSandbox with your responses. Make sure your CodeSandbox has the shape of this Regex: `/^https:\/\/codesandbox\.io\/p\/sandbox\/[a-z\d]{6}$/`. _See [Coding](#coding)_
 
 https://codesandbox.io/s/tq7hrf
+https://codesandbox.io/p/sandbox/tq7hrf
 
 ---
 
